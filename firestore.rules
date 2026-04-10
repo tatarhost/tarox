@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidFile(data) {
+      return hasOnlyAllowedFields(['filename', 'originalName', 'mimetype', 'size', 'url', 'uploadedAt', 'moderationStatus', 'moderationReason', 'uploaderId', 'uploaderName']) &&
+             data.filename is string && data.filename.size() > 0 && data.filename.size() < 200 &&
+             data.originalName is string && data.originalName.size() > 0 && data.originalName.size() < 200 &&
+             data.mimetype is string && data.mimetype.size() > 0 && data.mimetype.size() < 100 &&
+             data.size is number && data.size >= 0 &&
+             data.url is string && data.url.size() > 0 && data.url.size() < 1000 &&
+             data.uploadedAt is string && data.uploadedAt.size() > 0 && data.uploadedAt.size() < 50 &&
+             data.moderationStatus in ['pending', 'approved', 'rejected'] &&
+             (!('moderationReason' in data) || (data.moderationReason is string && data.moderationReason.size() < 500)) &&
+             data.uploaderId is string && data.uploaderId == request.auth.uid &&
+             data.uploaderName is string && data.uploaderName.size() > 0 && data.uploaderName.size() < 100;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /files/{fileId} {
+      // Anyone can read approved files
+      allow read: if resource.data.moderationStatus == 'approved';
+      // Users can read their own files regardless of status
+      allow read: if isAuthenticated() && resource.data.uploaderId == request.auth.uid;
+      
+      // Users can create files if they are authenticated and the data is valid
+      allow create: if isAuthenticated() && isValidFile(request.resource.data);
+      
+      // No updates or deletes allowed for now
+      allow update, delete: if false;
+    }
+  }
+}

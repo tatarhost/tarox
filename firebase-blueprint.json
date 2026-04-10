@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "File": {
+      "title": "File",
+      "description": "A file uploaded by a user",
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string",
+          "description": "The generated filename"
+        },
+        "originalName": {
+          "type": "string",
+          "description": "The original filename"
+        },
+        "mimetype": {
+          "type": "string",
+          "description": "The MIME type of the file"
+        },
+        "size": {
+          "type": "number",
+          "description": "The size of the file in bytes"
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the file (Cloudinary or local)"
+        },
+        "uploadedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the file was uploaded"
+        },
+        "moderationStatus": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "The moderation status of the file"
+        },
+        "moderationReason": {
+          "type": "string",
+          "description": "The reason for rejection (if applicable)"
+        },
+        "uploaderId": {
+          "type": "string",
+          "description": "The ID of the user who uploaded the file"
+        },
+        "uploaderName": {
+          "type": "string",
+          "description": "The name of the user who uploaded the file"
+        }
+      },
+      "required": ["filename", "originalName", "mimetype", "size", "url", "uploadedAt", "moderationStatus", "uploaderId", "uploaderName"]
+    }
+  },
+  "firestore": {
+    "/files/{fileId}": {
+      "schema": {
+        "$ref": "#/entities/File"
+      },
+      "description": "The collection of uploaded files"
+    }
+  }
+}
